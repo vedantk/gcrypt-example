@@ -1,0 +1,11 @@
+This repo provides some starter code for working with libgcrypt.
+
+Demo:
+$ ./keygen rsapk.sp
+$ ./main rsapk.sp
+Original:
+ 48656C6C6F20776F726C642E
+ Decrypted:
+ 48656C6C6F20776F726C642E
+Messages match.
+-> Hello world.
