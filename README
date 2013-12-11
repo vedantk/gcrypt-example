@@ -1,11 +1,21 @@
 This repo provides some starter code for working with libgcrypt.
 
 Demo:
-$ ./keygen rsapk.sp
-$ ./main rsapk.sp
+
+$ ./keygen rsapk.sp 
+RSA key generation can take a few minutes. Your computer 
+needs to gather random entropy. Please wait... 
+
+RSA key generation complete! Please enter a password to lock 
+your key pair. This password must be committed to memory. 
+
+Keypair Password: 
+
+$ ./main rsapk.sp 
+Keypair Password: 
 Original:
  48656C6C6F20776F726C642E
- Decrypted:
+Decrypted:
  48656C6C6F20776F726C642E
 Messages match.
 -> Hello world.
