@@ -1,9 +1,10 @@
-#include <fcntl.h>
-#include <sys/stat.h>
-#include <unistd.h>
-
 #include "gcry.hh"
-#include "util.hh"
+
+void xerr(const char* msg)
+{
+    fprintf(stderr, "%s\n", msg);
+    exit(1);
+}
 
 void gcrypt_init()
 {
@@ -19,7 +20,7 @@ void gcrypt_init()
     /* We don't want to see any warnings, e.g. because we have not yet
        parsed program options which might be used to suppress such
        warnings. */
-    err &= gcry_control (GCRYCTL_SUSPEND_SECMEM_WARN);
+    err = gcry_control (GCRYCTL_SUSPEND_SECMEM_WARN);
 
     /* ... If required, other initialization goes here.  Note that the
        process might still be running with increased privileges and that
@@ -43,72 +44,39 @@ void gcrypt_init()
     }
 }
 
-int gcrypt_sexp_to_file(const char* name, gcry_sexp_t sexp, size_t maxlen)
+size_t get_keypair_size(int nbits)
 {
-    int err = 0;
-    FILE* of = fopen(name, "wb");
-    if (of == NULL) {
-        return 1;
-    }
-
-    void* buf = malloc(maxlen);
-    if (buf == NULL) {
-        err = 1;
-        goto exit1;
-    }
-
-    size_t len;
-    len = gcry_sexp_sprint(sexp, GCRYSEXP_FMT_CANON, buf, maxlen);
-    if (len == 0) {
-        goto exit2;    
-    }
-
-    if (fwrite(buf, len, 1, of) != len) {
-        err = 1;
-        goto exit2;
-    }
-
-exit2:
-    free(buf);
-exit1:
-    fclose(of);
-    return err;
+    size_t aes_blklen = gcry_cipher_get_algo_blklen(GCRY_CIPHER_AES128);
+    return nbits * aes_blklen;
 }
 
-int gcrypt_file_to_sexp(const char* name, gcry_sexp_t* sexp)
+void get_aes_ctx(gcry_cipher_hd_t* aes_hd)
 {
-    int err = 0;
-    size_t buflen;
-    void* buf;
+    const size_t keylen = 16;
+    char passwd_hash[keylen];
 
-    int fd = open(name, O_RDONLY);
-    if (fd < 0) {
-        return 1;
+    char* passwd = getpass("Keypair Password: ");
+    size_t pass_len = passwd ? strlen(passwd) : 0;
+    if (pass_len == 0) {
+        xerr("getpass: not a valid password");
     }
 
-    struct stat sbuf;
-    if (fstat(fd, &sbuf) != 0) {
-        err = 1;
-        goto exit1;
+    int err = gcry_cipher_open(aes_hd, GCRY_CIPHER_AES128, 
+                               GCRY_CIPHER_MODE_CFB, 0);
+    if (err) {
+        xerr("gcrypt: failed to create aes handle");
     }
 
-    buflen = sbuf.st_size + 1;
-    buf = malloc(buflen);
-    if (buf == NULL) {
-        err = 1;
-        goto exit1;
+    gcry_md_hash_buffer(GCRY_MD_MD5, (void*) &passwd_hash, 
+                        (const void*) passwd, pass_len);
+
+    err = gcry_cipher_setkey(*aes_hd, (const void*) &passwd_hash, keylen);
+    if (err) {
+        xerr("gcrypt: could not set cipher key");
     }
 
-    if (read(fd, buf, sbuf.st_size) != sbuf.st_size) {
-        err = 1;
-        goto exit2;
+    err = gcry_cipher_setiv(*aes_hd, (const void*) &passwd_hash, keylen);
+    if (err) {
+        xerr("gcrypt: could not set cipher initialization vector");
     }
-
-    err = gcry_sexp_new(sexp, buf, buflen, 0);
-
-exit2:
-    free(buf);
-exit1:
-    close(fd);
-    return err;
 }

@@ -6,10 +6,9 @@ BINS = keygen main
 
 all: $(BINS)
 
-util.o: util.cc util.hh
 gcry.o: gcry.cc gcry.hh
-keygen: keygen.cc util.o gcry.o
-main: main.cc util.o gcry.o
+keygen: keygen.cc gcry.o
+main: main.cc gcry.o
 
 clean:
 	rm -f *.o $(BINS)
