@@ -28,16 +28,16 @@ void gcrypt_init()
 
     /* Allocate a pool of 16k secure memory.  This make the secure memory
        available and also drops privileges where needed.  */
-    err &= gcry_control (GCRYCTL_INIT_SECMEM, 16384, 0);
+    err |= gcry_control (GCRYCTL_INIT_SECMEM, 16384, 0);
 
     /* It is now okay to let Libgcrypt complain when there was/is
        a problem with the secure memory. */
-    err &= gcry_control (GCRYCTL_RESUME_SECMEM_WARN);
+    err |= gcry_control (GCRYCTL_RESUME_SECMEM_WARN);
 
     /* ... If required, other initialization goes here.  */
 
     /* Tell Libgcrypt that initialization has completed. */
-    err &= gcry_control (GCRYCTL_INITIALIZATION_FINISHED, 0);
+    err |= gcry_control (GCRYCTL_INITIALIZATION_FINISHED, 0);
 
     if (err) {
         xerr("gcrypt: failed initialization");
