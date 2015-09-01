@@ -47,7 +47,12 @@ void gcrypt_init()
 size_t get_keypair_size(int nbits)
 {
     size_t aes_blklen = gcry_cipher_get_algo_blklen(GCRY_CIPHER_AES128);
-    return nbits * aes_blklen;
+
+    // format overhead * {pub,priv}key (2 * bits)
+    size_t keypair_nbits = 4 * (2 * nbits);
+
+    size_t rem = keypair_nbits % aes_blklen;
+    return (keypair_nbits + rem) / 8;
 }
 
 void get_aes_ctx(gcry_cipher_hd_t* aes_hd)
